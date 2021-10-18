@@ -16,10 +16,8 @@ If you use our implementation in your academic work, please cite the correspondi
 	@InProceedings{dong2021ecmr,
         author = {H. Dong and X. Chen and C. Stachniss},
         title = {{Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments}},
-        booktitle = "Proceedings of the European Conference on Mobile Robots (ECMR)",
-        year = {2021},
-        codeurl = {https://github.com/PRBonn/pole-localization},
-        url = {https://www.ipb.uni-bonn.de/pdfs/dong2021ecmr.pdf}
+        booktitle = {Proceedings of the European Conference on Mobile Robots (ECMR)},
+        year = {2021}
     }
 
 ## Dependencies
