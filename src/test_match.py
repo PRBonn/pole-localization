@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import cluster
 import scipy.special
+import scipy.stats
 
 globalmapname_gt = "globalmap_gt_cluster"
 globalmapfile = os.path.join('data/pole-dataset/NCLT', globalmapname_gt + '.npz')
