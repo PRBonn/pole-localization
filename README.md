@@ -1,8 +1,10 @@
 # Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments
 
-This repo contains the code for our ECMR2021 paper: Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments.
+The code for the [learning-based pole extractor](https://arxiv.org/abs/2208.07364) will come soon.
 
-Developed by [Hao Dong](https://sites.google.com/view/dong-hao/) and [Xieyuanli Chen](https://www.ipb.uni-bonn.de/people/xieyuanli-chen/). The code is based on Alexander's [polex](https://github.com/acschaefer/polex).
+This repo contains the code for our ECMR2021 paper Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments and RAS submitted paper Online Pole Segmentation on Range Images for Long-term LiDAR Localization in Urban Environments.
+
+Developed by [Hao Dong](https://sites.google.com/view/dong-hao/) and [Xieyuanli Chen](https://www.ipb.uni-bonn.de/people/xieyuanli-chen/). 
 
 
 <img src="data/figs/system.jpg" width="400">
@@ -11,14 +13,22 @@ Overview of our approach. A. we project the LiDAR point cloud into a range image
 
 
 ## Publication
-If you use our implementation in your academic work, please cite the corresponding [paper](https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/dong2021ecmr.pdf):
+If you use our implementation in your academic work, please cite the corresponding [conference paper](https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/dong2021ecmr.pdf) and [journal paper](https://arxiv.org/abs/2208.07364):
     
 	@InProceedings{dong2021ecmr,
         author = {H. Dong and X. Chen and C. Stachniss},
         title = {{Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments}},
         booktitle = {Proceedings of the European Conference on Mobile Robots (ECMR)},
         year = {2021}
-    }
+        }
+    
+	@article{dong2022ras,
+	author   = {H. Dong and X. Chen and S. Särkkä and C. Stachniss},
+	title    = {{Online Pole Segmentation on Range Images for Long-term LiDAR Localization in Urban Environments}},
+	journal  = arxiv,
+	eprint   = {2208.07364},
+	year     = {2022},
+	}
 
 ## Dependencies
 
@@ -67,5 +77,6 @@ Copyright 2021, Hao Dong, Xieyuanli Chen, Cyrill Stachniss, Photogrammetry and R
 
 This project is free software made available under the MIT License. For details see the LICENSE file.
 
+## Acknowledgement
 
-
+Many thanks to the excellent open-source projects [polex](https://github.com/acschaefer/polex) and [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext).
