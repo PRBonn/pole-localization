@@ -1,7 +1,7 @@
 import numpy as np
 from numba import jit
 
-def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, width_thr = 10, fov_up=30.67, fov_down=-10.67, proj_H = 32, proj_W = 250, lowest=0.1, highest=6, lowthr = 1.5, highthr = 0.7, totalthr = 0.6):
+def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, width_thr = 10, fov_up=30.67, fov_down=-10.67, proj_H = 32, proj_W = 250, lowest=0.1, highest=6, lowthr = 1.5, highthr = 0.7, totalthr = 0.6, vis=False):
     range_data, proj_vertex, _ = range_projection(xyz,
                                                 fov_up=fov_up,
                                                 fov_down=fov_down,
@@ -49,6 +49,8 @@ def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, wid
             clusters_list.remove(cluster)
 
     poleparams = np.empty([0, 3])
+    if vis:
+        pole_vis = np.full((proj_H, proj_W), 0, dtype=np.int)
     for cluster in clusters_list:
         x = []
         y = []
@@ -84,9 +86,15 @@ def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, wid
                         if R_1 > 0.02 and R_1 < 0.4:
                             neighbour = xyz[(((scan_x > (average_x - fine_thr - neighbourthr)) & (scan_x < (average_x - fine_thr))) | ((scan_x > (average_x + fine_thr)) & (scan_x < (average_x + fine_thr + neighbourthr)))) & (((scan_y > (average_y + fine_thr - neighbourthr)) & (scan_y < (average_y - fine_thr))) | ((scan_y > (average_y + fine_thr)) & (scan_y < (average_y + fine_thr + neighbourthr)))) & (scan_z < high) & (scan_z > low)]
                             if neighbour.shape[0] < 0.15 * current_vertex_fine.shape[0]:
+                                if vis:
+                                    for index in cluster:
+                                        pole_vis[index[0]][index[1]] = 1
                                 poleparams = np.vstack([poleparams, [xc_1,yc_1,R_1]])
 
-    return poleparams
+    if vis:
+        return poleparams, pole_vis
+    else:
+        return poleparams
 
 @jit(nopython=True)
 def gen_open_set(range_data, height, width):
