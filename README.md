@@ -14,21 +14,27 @@ Overview of our approach. A. we project the LiDAR point cloud into a range image
 
 ## Publication
 If you use our implementation in your academic work, please cite the corresponding [conference paper](https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/dong2021ecmr.pdf) and [journal paper](https://arxiv.org/abs/2208.07364):
-    
-	@InProceedings{dong2021ecmr,
-        author = {H. Dong and X. Chen and C. Stachniss},
-        title = {{Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments}},
-        booktitle = {Proceedings of the European Conference on Mobile Robots (ECMR)},
-        year = {2021}
-        }
-    
-	@article{dong2022ras,
-	author   = {H. Dong and X. Chen and S. Särkkä and C. Stachniss},
-	title    = {{Online Pole Segmentation on Range Images for Long-term LiDAR Localization in Urban Environments}},
-	journal  = arxiv,
-	eprint   = {2208.07364},
-	year     = {2022},
-	}
+```
+@InProceedings{dong2021ecmr,
+author = {H. Dong and X. Chen and C. Stachniss},
+title = {{Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments}},
+booktitle = {Proceedings of the European Conference on Mobile Robots (ECMR)},
+year = {2021}
+}
+```
+
+```
+@article{dong2023jras,
+title = {Online pole segmentation on range images for long-term LiDAR localization in urban environments},
+journal = {Robotics and Autonomous Systems},
+volume ={159},
+pages = {104283},
+year = {2023},
+issn = {0921-8890},
+doi = {https://doi.org/10.1016/j.robot.2022.104283},
+author = {H. Dong and X. Chen and S. S{\"a}rkk{\"a} and C. Stachniss}
+}
+```
 
 ## Dependencies
 
