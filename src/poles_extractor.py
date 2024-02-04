@@ -1,5 +1,103 @@
 import numpy as np
 from numba import jit
+import torch
+
+
+def detect_poles_learning(xyz, model, device, cut_z=True, neighbourthr=0.5, min_point_num=3, width_thr=10, fov_up=30.67, fov_down=-10.67, proj_H=32, proj_W=256, lowest=0.1, highest=6, lowthr=1.5, highthr=0.7, totalthr=0.6):
+    range_data_raw, proj_vertex, _ = range_projection(xyz,
+                                                  fov_up=fov_up,
+                                                  fov_down=fov_down,
+                                                  proj_H=proj_H,
+                                                  proj_W=proj_W,
+                                                  max_range=50,
+                                                  cut_z=cut_z,
+                                                  low=lowest,
+                                                  high=highest)
+
+    height = range_data_raw.shape[0]
+    width = range_data_raw.shape[1]
+
+    poleparams = np.empty([0, 3])
+
+    range_data = norm_range(range_data_raw)
+
+    in_vol = torch.from_numpy(np.expand_dims(np.expand_dims(
+        range_data, axis=0), axis=0)).to(device)
+    output = model(in_vol)
+    argmax = output.argmax(dim=1)
+    pole_out = argmax[0]
+    pole_out = pole_out.cpu().detach().numpy()
+
+    open_set = gen_open_set(pole_out, height, width, invalid=0)
+    open_set = np.array(open_set)
+
+    if open_set.shape[0] == 0:
+        return poleparams
+    else:
+        clusters = gen_clusters_learning(open_set, pole_out, height,
+                                         width, range_data_raw, min_point_num=min_point_num)
+        
+        clusters_list = []
+        for cluster in clusters:
+            clusters_list.append(cluster.tolist())
+
+        clusters_copy = list(clusters_list)
+        for cluster in clusters_copy:
+            cluster.sort()
+            min_height = cluster[0][0]
+            max_height = cluster[len(cluster)-1][0]
+            cluster.sort(key=takeSecond)
+            min_width = cluster[0][1]
+            max_width = cluster[len(cluster)-1][1]
+            ratio = (max_height - min_height + 1) / (max_width - min_width + 1)
+
+            if ratio < 1.0 or (max_width - min_width + 1) > width_thr:
+                clusters_list.remove(cluster)
+
+        for cluster in clusters_list:
+            x = []
+            y = []
+            z = []
+            for index in cluster:
+                index[0] = int(index[0])
+                index[1] = int(index[1])
+                x.append(proj_vertex[index[0]][index[1]][0])
+                y.append(proj_vertex[index[0]][index[1]][1])
+                z.append(proj_vertex[index[0]][index[1]][2])
+
+            high = max(z)
+            low = min(z)
+            if high > highthr and low < lowthr and (high-low) > totalthr:
+                if fit_circle(x, y) != None:
+                    average_x, average_y, R_1 = fit_circle(x, y)
+                    fine_thr = R_1 + 0.1
+                    scan_x = xyz[:, 0]
+                    scan_y = xyz[:, 1]
+                    scan_z = xyz[:, 2]
+
+                    high = min(high, 3.0)
+
+                    current_vertex_fine = xyz[(scan_x > (average_x - fine_thr)) & (scan_x < (average_x + fine_thr)) & (
+                        scan_y < (average_y + fine_thr)) & (scan_y > (average_y - fine_thr)) & (scan_z < high) & (scan_z > low)]
+                    x = []
+                    y = []
+                    for i in range(current_vertex_fine.shape[0]):
+                        x.append(current_vertex_fine[i, 0])
+                        y.append(current_vertex_fine[i, 1])
+                    if len(x) >= 6:
+                        if fit_circle(x, y) != None:
+                            xc_1, yc_1, R_1 = fit_circle(x, y)
+                            if R_1 > 0.02 and R_1 < 0.4:
+                                neighbour = xyz[(((scan_x > (average_x - fine_thr - neighbourthr)) & (scan_x < (average_x - fine_thr))) | ((scan_x > (average_x + fine_thr)) & (scan_x < (average_x + fine_thr + neighbourthr)))) & (
+                                    ((scan_y > (average_y + fine_thr - neighbourthr)) & (scan_y < (average_y - fine_thr))) | ((scan_y > (average_y + fine_thr)) & (scan_y < (average_y + fine_thr + neighbourthr)))) & (scan_z < high) & (scan_z > low)]
+                                if neighbour.shape[0] < 0.15 * current_vertex_fine.shape[0]:
+                                    # for index in cluster:
+                                    #     range_data_copy[index[0]][index[1]] = 1
+                                    poleparams = np.vstack(
+                                        [poleparams, [xc_1, yc_1, R_1]])
+
+        return poleparams
+
 
 def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, width_thr = 10, fov_up=30.67, fov_down=-10.67, proj_H = 32, proj_W = 250, lowest=0.1, highest=6, lowthr = 1.5, highthr = 0.7, totalthr = 0.6, vis=False):
     range_data, proj_vertex, _ = range_projection(xyz,
@@ -95,6 +193,59 @@ def detect_poles(xyz, neighbourthr = 0.5, min_point_num = 3, dis_thr = 0.08, wid
         return poleparams, pole_vis
     else:
         return poleparams
+
+
+
+@jit(nopython=True)
+def gen_clusters_learning(open_set, pole_out, height, width, range_data, min_point_num=3, dis_thr=0.2):
+    clusters = []
+    while open_set.shape[0] > 0:
+        cluster = np.zeros((0, 2))
+        current_index = open_set[0]
+        open_set = np.delete(open_set, [0, 1]).reshape((-1, 2))
+        cluster = np.append(cluster, current_index).reshape((-1, 2))
+        near_set = np.zeros((0, 2), dtype=np.int64)
+
+        if (current_index[0]+1 < height) and (in_array(open_set, np.array([current_index[0]+1, current_index[1]]))) and pole_out[current_index[0]+1][current_index[1]] > 0 and abs(range_data[current_index[0]][current_index[1]] - range_data[current_index[0]+1][current_index[1]]) < dis_thr:
+            near_set = np.append(
+                near_set, [current_index[0]+1, current_index[1]]).reshape((-1, 2))
+        if (current_index[1]+1 < width) and (in_array(open_set, np.array([current_index[0], current_index[1]+1]))) and pole_out[current_index[0]][current_index[1]+1] > 0 and abs(range_data[current_index[0]][current_index[1]] - range_data[current_index[0]][current_index[1]+1]) < dis_thr:
+            near_set = np.append(
+                near_set, [current_index[0], current_index[1]+1]).reshape((-1, 2))
+        while len(near_set) > 0:
+            near_index = near_set[0]
+            near_set = np.delete(near_set, [0, 1]).reshape((-1, 2))
+            for i in range(open_set.shape[0]):
+                if open_set[i][0] == near_index[0] and open_set[i][1] == near_index[1]:
+                    open_set = np.delete(
+                        open_set, [2*i, 2*i+1]).reshape((-1, 2))
+                    break
+            cluster = np.append(cluster, near_index).reshape((-1, 2))
+            if (near_index[0]+1 < height) and (in_array(open_set, np.array([near_index[0]+1, near_index[1]]))) and (not in_array(cluster, np.array([near_index[0]+1, near_index[1]]))) and (not in_array(near_set, np.array([near_index[0]+1, near_index[1]]))) and pole_out[near_index[0]+1][near_index[1]] > 0 and (abs(range_data[near_index[0]][near_index[1]] - range_data[near_index[0]+1][near_index[1]]) < dis_thr):
+                near_set = np.append(
+                    near_set, [near_index[0]+1, near_index[1]]).reshape((-1, 2))
+            if (near_index[1]+1 < width) and (in_array(open_set, np.array([near_index[0], near_index[1]+1]))) and (not in_array(cluster, np.array([near_index[0], near_index[1]+1]))) and (not in_array(near_set, np.array([near_index[0], near_index[1]+1]))) and pole_out[near_index[0]][near_index[1]+1] > 0 and (abs(range_data[near_index[0]][near_index[1]] - range_data[near_index[0]][near_index[1]+1]) < dis_thr):
+                near_set = np.append(
+                    near_set, [near_index[0], near_index[1]+1]).reshape((-1, 2))
+            if (near_index[1]-1 >= 0) and (in_array(open_set, np.array([near_index[0], near_index[1]-1]))) and (not in_array(cluster, np.array([near_index[0], near_index[1]-1]))) and (not in_array(near_set, np.array([near_index[0], near_index[1]-1]))) and pole_out[near_index[0]][near_index[1]-1] > 0 and (abs(range_data[near_index[0]][near_index[1]] - range_data[near_index[0]][near_index[1]-1]) < dis_thr):
+                near_set = np.append(
+                    near_set, [near_index[0], near_index[1]-1]).reshape((-1, 2))
+
+        if cluster.shape[0] > min_point_num:
+            clusters.append(cluster)
+    return clusters
+
+
+@jit(nopython=True)
+def norm_range(range_data):
+    max_range = np.max(range_data)
+    range_data_norm = np.copy(range_data)
+
+    for i in range(range_data.shape[0]):
+        for j in range(range_data.shape[1]):
+            if range_data[i][j] > 0:
+                range_data_norm[i][j] = range_data_norm[i][j] / max_range
+    return range_data_norm
 
 @jit(nopython=True)
 def gen_open_set(range_data, height, width):

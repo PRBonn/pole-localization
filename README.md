@@ -1,8 +1,6 @@
 # Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments
 
-The code for the [learning-based pole extractor](https://arxiv.org/abs/2208.07364) will come soon.
-
-This repo contains the code for our ECMR2021 paper Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments and RAS submitted paper Online Pole Segmentation on Range Images for Long-term LiDAR Localization in Urban Environments.
+This repo contains the code for our ECMR2021 paper "Online Range Image-based Pole Extractor for Long-term LiDAR Localization in Urban Environments" and RAS paper "Online Pole Segmentation on Range Images for Long-term LiDAR Localization in Urban Environments".
 
 Developed by [Hao Dong](https://sites.google.com/view/dong-hao/) and [Xieyuanli Chen](https://www.ipb.uni-bonn.de/people/xieyuanli-chen/). 
 
@@ -76,6 +74,12 @@ The pole datasets are stored in the `/data/pole-dataset/KITTI` and `/data/pole-d
   ```bash
   python src/test_match.py
   ```
+
+## Pole Learning
+ ```bash
+  python src/ncltpoles_learning.py
+  ```
+
 
 ## License
 
